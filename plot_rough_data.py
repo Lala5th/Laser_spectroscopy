@@ -10,15 +10,20 @@ from scipy.optimize import curve_fit
 args = sys.argv
 argnum = 2
 usage = '''Usage:
-.\{0} dataset
+.\{0} dataset [E_scaling]
 or in ipython console:
-%run {0} dataset'''.format(args[0])
+%run {0} dataset [E_scaling]'''.format(args[0])
 
-if len(args) != argnum:
+if len(args) < argnum:
     print(usage)
     sys.exit()
 
+scaling = 1
+if len(args) >= 3:
+    scaling = float(args[2])
+
 fitfunc = lambda x, a, b, A, m, s: a*x + b - A*gaussian(x,m,s)
+params = ['a','b','A','m','s']
 
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
@@ -38,8 +43,8 @@ def fit_line(xmin,xmax):
     y = np.array(y)
     fit, cov = curve_fit(fitfunc,x,y,p0=[50,0,1,(xmin+xmax)/2,0.001])
     plt.plot(x,fitfunc(x,*fit))
-    for param in zip(fit,sp.sqrt(np.diag(cov))):
-        print(param[0],'+-',param[1])
+    for param in zip(params,fit,sp.sqrt(np.diag(cov))):
+        print(param[0], ':', param[1], '+-', param[2])
 
 gaussian = lambda x,m,s : norm.pdf(x,m,s)
 
@@ -49,8 +54,12 @@ data = np.loadtxt(args[1],dtype=[('t',np.float64,()),('I',np.float64,())],skipro
 
 #fit, cov = curve_fit(fitfunc,data['t'],data['I'],p0=[48,0.0034,0.0088,0.0217,0.032,1,2,1,0.25,0.001,-0.0034])
 
+data['t'] *= scaling
 plt.ion()
 plt.plot(data['t'][5:-4],moving_average(data['I'],n=10))
-plt.xlabel("Time [s]")
+if scaling == 1:
+    plt.xlabel("Time [s]")
+else:
+    plt.xlabel("Energy [Hz]")
 plt.ylabel("Intensity [a.u.]")
 plt.show()
