@@ -36,6 +36,9 @@ gaussian = lambda x,m,s : norm.pdf(x,m,s)
 probe = np.loadtxt(args[1],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
 ref = np.loadtxt(args[2],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
 
+probe['t'] *= scaling
+ref['t'] *= scaling
+
 ref['I'] -= np.mean(ref['I'])
 
 reffunc = interp1d(ref['t'],ref['I'],fill_value="extrapolate")
@@ -63,8 +66,6 @@ bg = lambda x, t0, a, b : (a)*reffunc(x + t0) - b
 
 bgopt,bgcov = curve_fit(bg,modprobe_t,modprobe,p0=[-0.0001,1,1],maxfev=10000)
 
-probe['t'] *= scaling
-ref['t'] *= scaling
 plt.ion()
 f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 ax1.plot(modprobe_t,modprobe)
@@ -90,7 +91,16 @@ def fit_line(xmin,xmax):
             break
     x = np.array(x)
     y = np.array(y)
-    fit, cov = curve_fit(fitfunc,x,y,p0=[0,0,1,(xmin+xmax)/2,0.0001],maxfev = 10000)
+    fit, cov = curve_fit(fitfunc,x,y,p0=[0,0,1,(xmin+xmax)/2,0.0001*scaling],maxfev = 10000)
     ax2.plot(x,fitfunc(x,*fit))
     for param in zip(params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
+    return (fit,cov)
+
+def fit_splitting(amin,amax,bmin,bmax):
+    print("Params for line A:")
+    afit, acov = fit_line(amin, amax)
+    print("Params for line B:")
+    bfit, bcov = fit_line(bmin, bmax)
+    print('')
+    print('Splitting:', np.abs(afit[3] - bfit[3]), '+-', np.sqrt(acov[3,3]**2 + bcov[3,3]**2))

@@ -41,10 +41,11 @@ def fit_line(xmin,xmax):
             break
     x = np.array(x)
     y = np.array(y)
-    fit, cov = curve_fit(fitfunc,x,y,p0=[50,0,1,(xmin+xmax)/2,0.001])
+    fit, cov = curve_fit(fitfunc,x,y,p0=[50,0,1,(xmin+xmax)/2,0.001*scaling])
     plt.plot(x,fitfunc(x,*fit))
     for param in zip(params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
+    return (fit,cov)
 
 gaussian = lambda x,m,s : norm.pdf(x,m,s)
 
@@ -63,3 +64,11 @@ else:
     plt.xlabel("Energy [Hz]")
 plt.ylabel("Intensity [a.u.]")
 plt.show()
+
+def fit_splitting(amin,amax,bmin,bmax):
+    print("Params for line A:")
+    afit, acov = fit_line(amin, amax)
+    print("Params for line B:")
+    bfit, bcov = fit_line(bmin, bmax)
+    print('')
+    print('Splitting:', np.abs(afit[3] - bfit[3]), '+-', np.sqrt(acov[3,3]**2 + bcov[3,3]**2))
