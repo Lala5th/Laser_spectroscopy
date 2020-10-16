@@ -12,4 +12,5 @@ Datafiles are located in the data folder. Current files and short descriprors:
 # Analysis code
 
 The analysis code included in the repository and their usages are:
-- `plot_rough_data.py dataset`: Plots the rough data with a moving average applied to it, as well as allows fitting to it using the `fit_line(xmin,xmax)` method afterwards.
+- `plot_rough_data.py dataset [E_scaling]`: Plots the rough data with a moving average applied to it, as well as allows fitting to it using the `fit_line(xmin,xmax)` method afterwards. The `E_scaling` can be supplied to transform Time into frequency for x axis.
+- `plot_hyperfine.py probe reference cull_low cull_high [E_scaling]`: Code used to remove the background of the probe beam measurement. The `cull_low` and `cull_high` parameters remove the first `cull_low` datapoints and the last `cull_high` datapoints, so they are not fitted. This is so that variation on doppler absorption depth variance is less of an issue. The `fit(xmin,xmax)` function is still present and now fits the background removed hyperfine structure. `E_scaling` can still be applied with the same effect.
