@@ -8,6 +8,7 @@ Datafiles are located in the data folder. Current files and short descriprors:
 - PD2_2.csv: Oscilloscope output of PD2 with the pump beam introduced into the system. PD2 is the probe beam. PD1's output is lost due to an error.
 - PD1_3.csv/PD2_3.csv: Oscilloscope output for PD1(reference), and PD2(probe). Setup is just as above.
 - PD1_4.csv/PD2_4.csv: Oscilloscope output for PD1(reference), and PD2(probe). Setup is just as above.
+- PD1_5.csv/PD2_5.csv/PD3_5.csv: Oscilloscope output for PD1(reference), PD2(probe) and PD3(etalon).
 
 # Analysis code
 
