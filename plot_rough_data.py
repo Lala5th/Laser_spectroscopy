@@ -18,6 +18,15 @@ if len(args) < argnum:
     print(usage)
     sys.exit()
 
+def get_chi_squared(func,params,x,y):
+    assert(x.shape == y.shape)
+    diff = np.abs(x[0]-x)
+    diff_nonzero = diff[np.nonzero(diff)]
+    error = diff_nonzero[diff_nonzero.argmin()]/2
+    chi_squared = np.sum((y - func(x,*params))**2)/error**2
+    ndof = x.size - params.size
+    return chi_squared/ndof
+
 scaling = 1
 if len(args) >= 3:
     scaling = float(args[2])
@@ -45,6 +54,7 @@ def fit_line(xmin,xmax):
     plt.plot(x,fitfunc(x,*fit))
     for param in zip(params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
+    print("Chi-square/Ndof :", get_chi_squared(fitfunc,fit,x,y))
     return (fit,cov)
 
 gaussian = lambda x,m,s : norm.pdf(x,m,s)
