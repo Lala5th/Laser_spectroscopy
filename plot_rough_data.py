@@ -50,7 +50,7 @@ def fit_line(xmin,xmax):
             break
     x = np.array(x)
     y = np.array(y)
-    fit, cov = curve_fit(fitfunc,x,y,p0=[50,0,1,(xmin+xmax)/2,0.001*scaling])
+    fit, cov = curve_fit(fitfunc,x,y,p0=[0,np.max(y),1,(xmax+xmin)/2,0.001*scaling])
     plt.plot(x,fitfunc(x,*fit))
     for param in zip(params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])

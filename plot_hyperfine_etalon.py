@@ -61,7 +61,7 @@ ref['t'] *= scaling
 
 ref['I'] -= np.mean(ref['I'])
 
-reffunc = interp1d(ref['t'],ref['I'],fill_value="extrapolate")
+reffunc = interp1d(ref['t'][4:-5],moving_average(ref['I'],10),fill_value="extrapolate")
 
 #assert(probe['t'].all()==ref['t'].all())
 #probe = probe[250:int(len(probe)/3)]
@@ -84,7 +84,7 @@ bg = lambda x, t0, a, b : (a)*reffunc(x + t0) - b
 
 #fit, cov = curve_fit(fitfunc,data['t'],data['I'],p0=[48,0.0034,0.0088,0.0217,0.032,1,2,1,0.25,0.001,-0.0034])
 
-bgopt,bgcov = curve_fit(bg,modprobe_t,modprobe,p0=[-0.0001,1,1],maxfev=10000)
+bgopt,bgcov = curve_fit(bg,modprobe_t,modprobe,p0=[-0.0001*scaling,1,1],maxfev=10000)
 
 if len(args) > argnum:
     etalon_mod['t'] *= scaling
@@ -101,7 +101,7 @@ removed_bg = modprobe-bg(modprobe_t,*bgopt)
 if scaling == 1:
     plt.xlabel("Time [s]")
 else:
-    plt.xlabel("Energy [Hz]")
+    plt.xlabel("Energy [MHz]")
 ax1.set_ylabel("Intensity [a.u.]")
 ax2.set_ylabel("Intensity [a.u.]")
 plt.show()

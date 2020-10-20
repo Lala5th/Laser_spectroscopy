@@ -35,7 +35,7 @@ if len(args) < argnum:
 scaling = 1
 if len(args) > argnum:
     etalon = np.loadtxt(args[argnum],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
-    etalon_mod = etalon[30000:-10000]
+    etalon_mod = etalon[0:-1]
     peaks, props = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75,distance = 500)
     diff = [etalon_mod['t'][peaks[i]] - etalon_mod['t'][peaks[i-1]] for i in range(1,peaks.size)]
     scaling = etalon_freq/np.abs(np.mean(diff))
@@ -60,7 +60,7 @@ def fit_line(xmin,xmax):
             break
     x = np.array(x)
     y = np.array(y)
-    fit, cov = curve_fit(fitfunc,x,y,p0=[50,0,1,(xmin+xmax)/2,0.001*scaling])
+    fit, cov = curve_fit(fitfunc,x,y,p0=[0,np.max(y),1,(xmax+xmin)/2,0.001*scaling])
     plt.plot(x,fitfunc(x,*fit))
     for param in zip(params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])

@@ -9,6 +9,11 @@ Datafiles are located in the data folder. Current files and short descriprors:
 - PD1_3.csv/PD2_3.csv: Oscilloscope output for PD1(reference), and PD2(probe). Setup is just as above.
 - PD1_4.csv/PD2_4.csv: Oscilloscope output for PD1(reference), and PD2(probe). Setup is just as above.
 - PD1_5.csv/PD2_5.csv/PD3_5.csv: Oscilloscope output for PD1(reference), PD2(probe) and PD3(etalon). Note that this dataset has a negative time-energy dependence.
+- PD3_S5_S/E/F.CSV: The etalon measurements at the start middle and end of the session.
+- PD1_6.csv/PD2_6.csv: Datasets taken as usual, with etalon blocked. Taken right after PD3_S5_S.
+- PD1_7.csv/PD2_7.csv: Datasets taken as usual, with etalon blocked. Taken right after PD3_S5_E.
+- PD1_8.csv/PD2_8.csv: Datasets taken as usual, with etalon blocked. Taken right after PD3_S5_F.
+- PD2_8_B.csv: PD2 data with the pump beam blocked. Taken after PD1/2_8.
 
 # Analysis code
 
