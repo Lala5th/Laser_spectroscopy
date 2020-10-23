@@ -117,18 +117,18 @@ def fit_splitting(amin,amax,bmin,bmax):
     print('Splitting:', np.abs(afit[3] - bfit[3]), '+-', np.sqrt(acov[3,3]**2 + bcov[3,3]**2))
 
 
-def structure(x, bg, a1, a2, a3, a12, a23, a13, m1, m2, m3, s):
+def structure(x, bg, a1, a2, a3, a12, a23, a13, m1, m2, m3, s1, s2, s3, s12, s23, s13):
     m12 = (m1+m2)/2
     m23 = (m2+m3)/2
     m13 = (m1+m3)/2
-    peak1 = a1*lorentzian(x,m1,s)
-    peak2 = a2*lorentzian(x,m2,s)
-    peak3 = a3*lorentzian(x,m3,s)
-    peak12 = a12*lorentzian(x,m12,s)
-    peak23 = a23*lorentzian(x,m23,s)
-    peak13 = a13*lorentzian(x,m13,s)
+    peak1 = a1*lorentzian(x,m1,s1)
+    peak2 = a2*lorentzian(x,m2,s2)
+    peak3 = a3*lorentzian(x,m3,s3)
+    peak12 = a12*lorentzian(x,m12,s12)
+    peak23 = a23*lorentzian(x,m23,s23)
+    peak13 = a13*lorentzian(x,m13,s13)
     return bg + peak1 + peak2 + peak3 + peak12 + peak23 + peak13
-struct_params = ['bg', 'a1', 'a2', 'a3', 'a12', 'a23', 'a13', 'm1', 'm2', 'm3', 's']
+struct_params = ['bg', 'a1', 'a2', 'a3', 'a12', 'a23', 'a13', 'm1', 'm2', 'm3', 's1', 's2', 's3', 's12', 's23', 's13']
 
 def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     x = []
@@ -142,9 +142,10 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     x = np.array(x)
     y = np.array(y)
     pos = [0,np.inf]
-    bounds = np.array([[-np.inf,sp.inf],pos,pos,pos,pos,pos,pos,[m1-0.001*scaling,m1+0.001*scaling],[m2-0.001*scaling,m2+0.001*scaling],[m3-0.001*scaling,m3+0.001*scaling],pos]).transpose()
+    HWHM = [0,0.0001*scaling]
+    bounds = np.array([[-np.inf,sp.inf],pos,pos,pos,pos,pos,pos,[m1-0.0001*scaling,m1+0.0001*scaling],[m2-0.0001*scaling,m2+0.0001*scaling],[m3-0.0001*scaling,m3+0.0001*scaling],HWHM,HWHM,HWHM,HWHM,HWHM,HWHM]).transpose()
     if(p0 == None):
-        fit, cov = curve_fit(structure,x,y,p0=[-1,100,100,100,100,100,100,m1,m2,m3,0.001*scaling],bounds = bounds,maxfev = 10000)
+        fit, cov = curve_fit(structure,x,y,p0=[-1,100,100,100,100,100,100,m1,m2,m3,0.00005*scaling,0.00005*scaling,0.00005*scaling,0.00005*scaling,0.00005*scaling,0.00005*scaling],bounds = bounds,maxfev = 10000)
     else:
         fit, cov = curve_fit(structure,x,y,p0=p0,bounds = bounds,maxfev = 10000)
     ax2.plot(x,structure(x,*fit))
