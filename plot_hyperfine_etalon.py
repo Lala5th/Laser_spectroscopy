@@ -33,6 +33,7 @@ if len(args) < argnum:
     print(usage)
     sys.exit()
 
+scal_err = 0
 scaling = 1
 if len(args) > argnum:
     etalon = np.loadtxt(args[argnum],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
@@ -40,7 +41,8 @@ if len(args) > argnum:
     peaks, props = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75,distance = 500)
     diff = [etalon_mod['t'][peaks[i]] - etalon_mod['t'][peaks[i-1]] for i in range(1,peaks.size)]
     scaling = etalon_freq/np.abs(np.mean(diff))
-    print("Scaling:",scaling,"+-",np.std(diff)*scaling,'MHz/s')
+    scale_err = np.std(diff)*etalon_freq/(np.mean(diff))**2
+    print("Scaling:",scaling,"+-",scale_err,'MHz/s')
 
 
 fitfunc = lambda x, a, b, A, m, s: a*x + b + A*lorentzian(x,m,s)
@@ -168,7 +170,7 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     for param in zip(struct_params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
     print("Splittings")
-    print('1-2 :', np.abs(fit[7] - fit[8]), '+-', np.sqrt(cov[7,7]**2 + cov[8,8]**2))
-    print('2-3 :', np.abs(fit[9] - fit[8]), '+-', np.sqrt(cov[9,9]**2 + cov[8,8]**2))
-    print('1-3 :', np.abs(fit[7] - fit[9]), '+-', np.sqrt(cov[7,7]**2 + cov[9,9]**2))
+    print('1-2 :', np.abs(fit[7] - fit[8]), '+-', np.sqrt(cov[7,7]**2 + cov[8,8]**2 + (scale_err*(fit[7] - fit[8])/scaling)**2))
+    print('2-3 :', np.abs(fit[9] - fit[8]), '+-', np.sqrt(cov[9,9]**2 + cov[8,8]**2 + (scale_err*(fit[9] - fit[8])/scaling)**2))
+    print('1-3 :', np.abs(fit[7] - fit[9]), '+-', np.sqrt(cov[7,7]**2 + cov[9,9]**2 + (scale_err*(fit[7] - fit[9])/scaling)**2))
     print("Chi-square/Ndof :", get_chi_squared(structure,fit,x,y))
