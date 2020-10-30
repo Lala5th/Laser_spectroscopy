@@ -63,15 +63,18 @@ ref = np.loadtxt(args[2],dtype=[('t',np.float64,()),('I',np.float64,())],skiprow
 
 #probe['t'] *= scaling
 #ref['t'] *= scaling
+cull_low = int(args[3])
+cull_high = -int(args[4])
 
-plt.plot(ref['t'],transform(ref['t']))
+
+plt.plot(t_loc,nu_loc,'x-')
+plt.plot(ref['t'][cull_low:cull_high],transform(ref['t'][cull_low:cull_high]))
+plt.xlabel("t [s]")
+plt.ylabel("$\\nu$ [MHz]")
 plt.show()
 
 
 probe['t'] = transform(probe['t'])
-
-cull_low = int(args[3])
-cull_high = -int(args[4])
 
 modref = ref['I'][cull_low:cull_high]
 modref_t = ref['t'][cull_low:cull_high]
@@ -185,3 +188,18 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     print('2-3 :', np.abs(fit[9] - fit[8]), '+-', np.sqrt(cov[9,9]**2 + cov[8,8]**2))
     print('1-3 :', np.abs(fit[7] - fit[9]), '+-', np.sqrt(cov[7,7]**2 + cov[9,9]**2))
     print("Chi-square/Ndof :", get_chi_squared(structure,fit,x,y))
+    return (fit, cov)
+
+def fit_total(amin,amax,bmin,bmax,am1,am2,am3,bm1,bm2,bm3):
+    assert(am1<am2)
+    assert(am2<am3)
+    assert(bm1<bm2)
+    assert(bm2<bm3)
+    assert(am3<bm1)
+    print("Fit A parameters:")
+    afit, acov = fit_structure(amin,amax,am1,am2,am3)
+    print("Fit B parameters:")
+    bfit, bcov = fit_structure(bmin,bmax,bm1,bm2,bm3)
+    print("\nS1/2 Splitting:")
+    print("a2-b3:", np.abs(afit[8] - bfit[9]), '+-', np.sqrt(acov[8,8]**2 + bcov[9,9]**2))
+    print("a1-b2:", np.abs(afit[7] - bfit[8]), '+-', np.sqrt(acov[7,7]**2 + bcov[8,8]**2))
