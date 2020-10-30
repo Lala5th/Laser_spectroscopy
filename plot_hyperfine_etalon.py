@@ -9,6 +9,7 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 import scipy.constants as const
+from scipy.misc import derivative
 
 args = sys.argv
 argnum = 6
@@ -40,7 +41,11 @@ peaks, props = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75,distance 
 t_loc = etalon_mod['t'][peaks[:]]
 nu_loc = [i*etalon_freq for i in range(t_loc.size)]
 
-transform = interp1d(t_loc,nu_loc,fill_value='extrapolate')
+t_err = 5.5e-6 # Etalon top level half width
+map_t_nu = interp1d(t_loc,nu_loc,fill_value='extrapolate')
+transform = map_t_nu
+inverse = interp1d(nu_loc,t_loc,fill_value='extrapolate')
+trans_error = lambda x : derivative(map_t_nu,inverse(x),dx=1e-6)*t_err
 
 fitfunc = lambda x, a, b, A, m, s: a*x + b + A*lorentzian(x,m,s)
 params = ['a','b','A','m','s']
@@ -171,6 +176,8 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     else:
         fit, cov = curve_fit(structure,x,y,p0=p0,bounds = bounds,maxfev = 10000)
     ax2.plot(x,structure(x,*fit))
+    for i in range(7,10):
+        cov[i,i] += trans_error(fit[i])**2
     for param in zip(struct_params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
     print("Splittings")
