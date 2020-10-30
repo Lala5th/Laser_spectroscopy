@@ -11,14 +11,14 @@ from scipy.signal import find_peaks
 import scipy.constants as const
 
 args = sys.argv
-argnum = 5
+argnum = 6
 etalon_len = 0.2
 etalon_freq = 1e-6*const.c/(2*etalon_len)
 print(etalon_freq)
 usage = '''Usage:
-.\{0} probe reference cull_low cull_high [etalon]
+.\{0} probe reference cull_low cull_high etalon
 or in ipython console:
-%run {0} probe reference cull_low cull_high [etalon]'''.format(args[0])
+%run {0} probe reference cull_low cull_high etalon'''.format(args[0])
 
 def get_chi_squared(func,params,x,y):
     assert(x.shape == y.shape)
@@ -33,17 +33,14 @@ if len(args) < argnum:
     print(usage)
     sys.exit()
 
-scal_err = 0
-scaling = 1
-if len(args) > argnum:
-    etalon = np.loadtxt(args[argnum],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
-    etalon_mod = etalon[30000:-10000]
-    peaks, props = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75,distance = 500)
-    diff = [etalon_mod['t'][peaks[i]] - etalon_mod['t'][peaks[i-1]] for i in range(1,peaks.size)]
-    scaling = etalon_freq/np.abs(np.mean(diff))
-    scale_err = np.std(diff)*etalon_freq/(np.mean(diff))**2
-    print("Scaling:",scaling,"+-",scale_err,'MHz/s')
+etalon = np.loadtxt(args[5],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
+etalon_mod = etalon
+peaks, props = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75,distance = 500)
+#diff = [etalon_mod['t'][peaks[i]] - etalon_mod['t'][peaks[i-1]] for i in range(1,peaks.size)]
+t_loc = etalon_mod['t'][peaks[:]]
+nu_loc = [i*etalon_freq for i in range(t_loc.size)]
 
+transform = interp1d(t_loc,nu_loc,fill_value='extrapolate')
 
 fitfunc = lambda x, a, b, A, m, s: a*x + b + A*lorentzian(x,m,s)
 params = ['a','b','A','m','s']
@@ -59,12 +56,23 @@ lorentzian = lambda x, m, s : cauchy.pdf(x,m,s)
 probe = np.loadtxt(args[1],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
 ref = np.loadtxt(args[2],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
 
-probe['t'] *= scaling
-ref['t'] *= scaling
+#probe['t'] *= scaling
+#ref['t'] *= scaling
 
-ref['I'] -= np.mean(ref['I'])
+plt.plot(ref['t'],transform(ref['t']))
+plt.show()
 
-reffunc = interp1d(ref['t'][4:-5],moving_average(ref['I'],10),fill_value="extrapolate")
+
+probe['t'] = transform(probe['t'])
+
+cull_low = int(args[3])
+cull_high = -int(args[4])
+
+modref = ref['I'][cull_low:cull_high]
+modref_t = ref['t'][cull_low:cull_high]
+modref_t = transform(modref_t)
+
+reffunc = interp1d(modref_t[4:-5],moving_average(modref,10),kind='linear',fill_value=(modref[0],modref[-1]),bounds_error=False)
 
 #assert(probe['t'].all()==ref['t'].all())
 #probe = probe[250:int(len(probe)/3)]
@@ -73,38 +81,33 @@ reffunc = interp1d(ref['t'][4:-5],moving_average(ref['I'],10),fill_value="extrap
 #modprobe_t = probe['t'][10:-10]
 #modprobe = moving_average(probe['I'],21)
 #modref = moving_average(ref['I'],21)
-cull_low = int(args[3])
-cull_high = -int(args[4])
 
 modprobe_t = probe['t'][cull_low:cull_high]
-modprobe = probe['I'][cull_low:cull_high] - np.mean(probe['I'][cull_low:cull_high])
-modref = ref['I']
+modprobe = probe['I'][cull_low:cull_high]
 
-bg = lambda x, t0, a, b : (a)*reffunc(x + t0) - b
+
+bg = lambda x, t0, a, b : a*reffunc(x + t0) - b
 
 #def fitfunc(x,B,M1,M2,M3,M4,A1,A2,A3,A4,S,T0):
 #    return(B-A1*gaussian(x,T0-M1,S)-A1*gaussian(x,T0-M2,S)-A1*gaussian(x,T0-M3,S)-A1*gaussian(x,T0-M4,S)-A1*gaussian(x,T0+M1,S)-A1*gaussian(x,T0+M2,S)-A1*gaussian(x,T0+M3,S)-A1*gaussian(x,T0+M4,S)).flatten()
 
 #fit, cov = curve_fit(fitfunc,data['t'],data['I'],p0=[48,0.0034,0.0088,0.0217,0.032,1,2,1,0.25,0.001,-0.0034])
 
-bgopt,bgcov = curve_fit(bg,modprobe_t,modprobe,p0=[-0.0001*scaling,1,1],maxfev=10000)
+bgopt,bgcov = curve_fit(bg,modprobe_t,modprobe,p0=[-70,1,1],maxfev=10000)
 
-if len(args) > argnum:
-    etalon_mod['t'] *= scaling
+etalon_mod['t'] = transform(etalon_mod['t'])
+
+removed_bg = modprobe-bg(modprobe_t,*bgopt)
+bgref = bg(modprobe_t,*bgopt)
 
 plt.ion()
 f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 ax1.plot(modprobe_t,modprobe)
 ax1.plot(modprobe_t,bg(modprobe_t,*bgopt))
-if len(args) > argnum:
-    ax1.plot(etalon_mod['t'],etalon_mod['I'])
-    ax1.plot(etalon_mod['t'][peaks],etalon_mod['I'][peaks],'x')
-ax2.plot(modprobe_t,modprobe-bg(modprobe_t,*bgopt))
-removed_bg = modprobe-bg(modprobe_t,*bgopt)
-if scaling == 1:
-    plt.xlabel("Time [s]")
-else:
-    plt.xlabel("Energy [MHz]")
+ax1.plot(etalon_mod['t'],etalon_mod['I'])
+ax1.plot(etalon_mod['t'][peaks],etalon_mod['I'][peaks],'x')
+ax2.plot(modprobe_t,removed_bg)
+plt.xlabel("Energy [MHz]")
 ax1.set_ylabel("Intensity [a.u.]")
 ax2.set_ylabel("Intensity [a.u.]")
 plt.show()
@@ -120,7 +123,7 @@ def fit_line(xmin,xmax):
             break
     x = np.array(x)
     y = np.array(y)
-    fit, cov = curve_fit(fitfunc,x,y,p0=[0,0,1,(xmin+xmax)/2,0.0001*scaling],maxfev = 10000)
+    fit, cov = curve_fit(fitfunc,x,y,p0=[0,0,1,(xmin+xmax)/2,10],maxfev = 10000)
     ax2.plot(x,fitfunc(x,*fit))
     for param in zip(params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
@@ -160,6 +163,7 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     x = np.array(x)
     y = np.array(y)
     pos = [0,np.inf]
+    scaling = 250000
     HWHM = [0,0.0001*scaling]
     bounds = np.array([[-np.inf,sp.inf],pos,pos,pos,pos,pos,pos,[m1-0.0001*scaling,m1+0.0001*scaling],[m2-0.0001*scaling,m2+0.0001*scaling],[m3-0.0001*scaling,m3+0.0001*scaling],HWHM,HWHM,HWHM,HWHM,HWHM,HWHM]).transpose()
     if(p0 == None):
@@ -170,7 +174,7 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     for param in zip(struct_params,fit,sp.sqrt(np.diag(cov))):
         print(param[0], ':', param[1], '+-', param[2])
     print("Splittings")
-    print('1-2 :', np.abs(fit[7] - fit[8]), '+-', np.sqrt(cov[7,7]**2 + cov[8,8]**2 + (scale_err*(fit[7] - fit[8])/scaling)**2))
-    print('2-3 :', np.abs(fit[9] - fit[8]), '+-', np.sqrt(cov[9,9]**2 + cov[8,8]**2 + (scale_err*(fit[9] - fit[8])/scaling)**2))
-    print('1-3 :', np.abs(fit[7] - fit[9]), '+-', np.sqrt(cov[7,7]**2 + cov[9,9]**2 + (scale_err*(fit[7] - fit[9])/scaling)**2))
+    print('1-2 :', np.abs(fit[7] - fit[8]), '+-', np.sqrt(cov[7,7]**2 + cov[8,8]**2))
+    print('2-3 :', np.abs(fit[9] - fit[8]), '+-', np.sqrt(cov[9,9]**2 + cov[8,8]**2))
+    print('1-3 :', np.abs(fit[7] - fit[9]), '+-', np.sqrt(cov[7,7]**2 + cov[9,9]**2))
     print("Chi-square/Ndof :", get_chi_squared(structure,fit,x,y))
