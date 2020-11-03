@@ -25,7 +25,7 @@ def get_chi_squared(func,params,x,y):
     assert(x.shape == y.shape)
     diff = np.abs(x[0]-x)
     diff_nonzero = diff[np.nonzero(diff)]
-    error = diff_nonzero[diff_nonzero.argmin()]/2
+    error = 0.25*diff_nonzero[diff_nonzero.argmin()]/2
     chi_squared = np.sum((y - func(x,*params))**2)/error**2
     ndof = x.size - params.size
     return chi_squared/ndof
@@ -173,8 +173,8 @@ def fit_structure(xmin,xmax,m1=0,m2=0,m3=0,p0=None):
     pos = [0,np.inf]
     scaling = 250000
     HWHM = [0,0.0001*scaling]
-    bounds = np.array([[-np.inf,sp.inf],pos,pos,pos,pos,pos,pos,[m1-0.0001*scaling,m1+0.0001*scaling],[m2-0.0001*scaling,m2+0.0001*scaling],[m3-0.0001*scaling,m3+0.0001*scaling],HWHM,HWHM,HWHM,HWHM,HWHM,HWHM]).transpose()
-    if(p0 == None):
+    bounds = np.array([[-np.inf,sp.inf],[-np.inf,np.inf],pos,pos,pos,pos,pos,[m1-0.0001*scaling,m1+0.0001*scaling],[m2-0.0001*scaling,m2+0.0001*scaling],[m3-0.0001*scaling,m3+0.0001*scaling],HWHM,HWHM,HWHM,HWHM,HWHM,HWHM]).transpose()
+    if(p0 is None):
         fit, cov = curve_fit(structure,x,y,p0=[-1,100,100,100,100,100,100,m1,m2,m3,0.00005*scaling,0.00005*scaling,0.00005*scaling,0.00005*scaling,0.00005*scaling,0.00005*scaling],bounds = bounds,maxfev = 10000)
     else:
         fit, cov = curve_fit(structure,x,y,p0=p0,bounds = bounds,maxfev = 10000)

@@ -23,7 +23,7 @@ def get_chi_squared(func,params,x,y):
     assert(x.shape == y.shape)
     diff = np.abs(x[0]-x)
     diff_nonzero = diff[np.nonzero(diff)]
-    error = diff_nonzero[diff_nonzero.argmin()]/2
+    error = 0.25*diff_nonzero[diff_nonzero.argmin()]/2
     chi_squared = np.sum((y - func(x,*params))**2)/error**2
     ndof = x.size - params.size
     return chi_squared/ndof
