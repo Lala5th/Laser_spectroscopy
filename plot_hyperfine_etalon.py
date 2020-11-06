@@ -11,6 +11,7 @@ from scipy.signal import find_peaks
 import scipy.constants as const
 from scipy.misc import derivative
 
+plt.ion()
 args = sys.argv
 argnum = 6
 etalon_len = 0.2
@@ -108,7 +109,6 @@ etalon_mod['t'] = transform(etalon_mod['t'])
 removed_bg = modprobe-bg(modprobe_t,*bgopt)
 bgref = bg(modprobe_t,*bgopt)
 
-plt.ion()
 f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 ax1.plot(modprobe_t,modprobe,label='Transmitted intensity')
 ax1.plot(modprobe_t,bg(modprobe_t,*bgopt),label='Fitted background')
