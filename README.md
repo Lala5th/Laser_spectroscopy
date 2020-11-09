@@ -27,4 +27,4 @@ The analysis code included in the repository and their usages are:
 # Setup
 
 A schematic view of the setup used.
-!(Setup)[Plots/Setup.png]
+![Setup](Plots/Setup.png)
