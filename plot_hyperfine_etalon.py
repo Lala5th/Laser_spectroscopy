@@ -24,9 +24,14 @@ or in ipython console:
 
 def get_chi_squared(func,params,x,y):
     assert(x.shape == y.shape)
-    diff = np.abs(x[0]-x)
-    diff_nonzero = diff[np.nonzero(diff)]
-    error = 0.25*diff_nonzero[diff_nonzero.argmin()]/2
+    global removed_bg
+    #diff = np.abs(x[0]-x)
+    #diff_nonzero = diff[np.nonzero(diff)]
+    #error = 0.25*diff_nonzero[diff_nonzero.argmin()]/2
+    plt.figure()
+    plt.plot(modref_t[modref_t.size-1000:modref_t.size+1000],removed_bg[modref_t.size-1000:modref_t.size+1000])
+    plt.show()
+    error = np.std(removed_bg[modref_t.size-1000:modref_t.size+1000])
     chi_squared = np.sum((y - func(x,*params))**2)/error**2
     ndof = x.size - params.size
     return chi_squared/ndof
@@ -38,15 +43,38 @@ if len(args) < argnum:
 etalon = np.loadtxt(args[5],dtype=[('t',np.float64,()),('I',np.float64,())],skiprows=1,delimiter=',')
 etalon_mod = etalon
 peaks, props = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75,distance = 500)
+peaks_close, props_close = find_peaks(etalon_mod['I'],np.max(etalon_mod['I'])*0.75)
+
+# Find error using initially suppressed peaks
+err_peaks = []
+true_peaks = []
+for peak in peaks:
+    nearby = peaks_close[np.where(np.logical_and(peak + 500 > peaks_close, peak - 500 < peaks_close))]
+    err_peaks.append(np.std(etalon_mod['t'][nearby]))
+    true_peaks.append(np.mean(etalon_mod['t'][nearby]))
+
 #diff = [etalon_mod['t'][peaks[i]] - etalon_mod['t'][peaks[i-1]] for i in range(1,peaks.size)]
-t_loc = etalon_mod['t'][peaks[:]]
+#t_loc = etalon_mod['t'][peaks[:]]
+t_loc = np.array(true_peaks)
+err_peaks = np.array(err_peaks)
 nu_loc = [i*etalon_freq for i in range(t_loc.size)]
 
-t_err = 5.5e-6 # Etalon top level half width
+t_err = err_peaks
 map_t_nu = interp1d(t_loc,nu_loc,fill_value='extrapolate')
 transform = map_t_nu
 inverse = interp1d(nu_loc,t_loc,fill_value='extrapolate')
-trans_error = lambda x : derivative(map_t_nu,inverse(x),dx=1e-6)*t_err
+def get_t_err(x):
+    idx = (np.abs(x - t_loc)).argmin()
+    if idx == 0:
+        return np.sqrt(t_err[0]**2 + t_err[1]**2)
+    elif idx == t_loc.size - 1:
+        return np.sqrt(t_err[-1]**2 + t_err[-2]**2)
+    elif x > t_loc[idx]:
+        return np.sqrt(t_err[idx]**2 + t_err[idx+1]**2)
+    return np.sqrt(t_err[idx]**2 + t_err[idx-1]**2)
+
+
+trans_error = lambda x : derivative(map_t_nu,inverse(x),dx=1e-6)*get_t_err(x)
 
 fitfunc = lambda x, a, b, A, m, s: a*x + b + A*lorentzian(x,m,s)
 params = ['a','b','A','m','s']
@@ -68,10 +96,11 @@ cull_low = int(args[3])
 cull_high = -int(args[4])
 
 
-plt.plot(t_loc,nu_loc,'x-')
-plt.plot(ref['t'][cull_low:cull_high],transform(ref['t'][cull_low:cull_high]))
+plt.errorbar(t_loc,nu_loc,fmt='x-',xerr=err_peaks,capsize=4)
+#plt.plot(ref['t'][cull_low:cull_high],transform(ref['t'][cull_low:cull_high]))
 plt.xlabel("t [s]")
 plt.ylabel("$\\nu$ [MHz]")
+plt.grid()
 plt.show()
 
 
